@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Student{% endblock %}
+
+{% block content %}
+<h1>Student Dashboard</h1>
+<p>Hello {{ current_user.name }}.</p>
+
+<h2>Exams</h2>
+<form class="d-flex gap-2 mb-3" method="get">
+  <input class="form-control" name="q" value="{{ q }}" placeholder="Search exam or course">
+  <button class="btn btn-outline-primary">Search</button>
+</form>
+
+<table class="table table-bordered">
+  <tr><th>Code</th><th>Exam</th><th>Course</th><th>Type</th><th>Duration</th><th>Marks</th><th>Status</th></tr>
+  {% for e in exams %}
+  <tr>
+    <td>{{ e.code }}</td>
+    <td>{{ e.name }}</td>
+    <td>{{ e.course_name }}</td>
+    <td>{{ e.type }}</td>
+    <td>{{ e.duration }} min</td>
+    <td>{{ e.max_marks|int }}</td>
+    <td>{{ e.status }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7">No exams found.</td></tr>
+  {% endfor %}
+</table>
+
+
+<h2>Book a slot</h2>
+<table class="table table-bordered">
+  <tr><th>Exam</th><th>Date and time</th><th>Examiner</th><th>Seats left</th><th></th></tr>
+  {% for s in slots %}
+  <tr>
+    <td>{{ s.exam_name }} <small>({{ s.code }})</small></td>
+    <td>{{ s.date }}, {{ s.start_time }} to {{ s.end_time }}</td>
+    <td>{{ s.examiner_name }}</td>
+    <td>{{ s.capacity - s.booked }} of {{ s.capacity }}</td>
+    <td>
+      {% if s.mine %}
+      Booked
+      {% else %}
+      <form method="post" action="{{ url_for('book_slot', slot_id=s.id) }}">
+        <button class="btn btn-sm btn-primary">Book</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">No slots available right now.</td></tr>
+  {% endfor %}
+</table>
+
+
+<h2>My bookings and results</h2>
+<table class="table table-bordered">
+  <tr><th>Exam</th><th>Date and time</th><th>Examiner</th><th>Status</th><th>Result</th><th></th></tr>
+  {% for b in history %}
+  <tr>
+    <td>{{ b.exam_name }} <small>({{ b.code }})</small></td>
+    <td>{{ b.date }}, {{ b.start_time }} to {{ b.end_time }}</td>
+    <td>{{ b.examiner_name }}</td>
+    <td>{{ b.status }}</td>
+    <td>
+      {% if b.marks is not none %}
+      {{ b.marks }} / {{ b.max_marks|int }}<br>
+      <small>{{ b.remarks or 'No remarks' }}</small>
+      {% else %}
+      Not marked yet
+      {% endif %}
+    </td>
+    <td>
+      {% if b.status == 'booked' %}
+      <form method="post" action="{{ url_for('cancel_booking', booking_id=b.id) }}">
+        <button class="btn btn-sm btn-danger">Cancel</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6">You have no bookings yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

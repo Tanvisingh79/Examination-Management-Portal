@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Examiner{% endblock %}
+
+{% block content %}
+<h1>Examiner Dashboard</h1>
+<p>Hello {{ current_user.name }}. You have {{ slots|length }} slots and {{ roster|length }} students.</p>
+
+<h2>Create a slot</h2>
+{% if available %}
+<form class="row g-2 mb-3" method="post" action="{{ url_for('create_slot') }}">
+  <div class="col-md-4">
+    <label class="form-label">Exam</label>
+    <select class="form-select" name="exam_id" required>
+      {% for e in available %}
+      <option value="{{ e.id }}">{{ e.code }} - {{ e.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Date</label>
+    <input class="form-control" type="date" name="date" required>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Start</label>
+    <input class="form-control" type="time" name="start_time" required>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">End</label>
+    <input class="form-control" type="time" name="end_time" required>
+  </div>
+  <div class="col-md-1">
+    <label class="form-label">Seats</label>
+    <input class="form-control" type="number" name="capacity" value="1" min="1" required>
+  </div>
+  <div class="col-md-1 d-flex align-items-end">
+    <button class="btn btn-primary w-100">Add</button>
+  </div>
+</form>
+{% else %}
+<p>No exams are open for slot creation right now. Ask the admin to open one.</p>
+{% endif %}
+
+
+<h2>My slots</h2>
+<table class="table table-bordered">
+  <tr><th>ID</th><th>Exam</th><th>Date and time</th><th>Booked</th><th>Stage</th><th></th></tr>
+  {% for s in slots %}
+  <tr>
+    <td>{{ s.id }}</td>
+    <td>{{ s.code }} - {{ s.exam_name }}</td>
+    <td>{{ s.date }}, {{ s.start_time }} to {{ s.end_time }}</td>
+    <td>{{ s.booked }}/{{ s.capacity }}</td>
+    <td>{{ s.exam_status }}</td>
+    <td>
+      {% if s.exam_status == 'slot_creation' and s.booked == 0 %}
+      <details>
+        <summary>Edit</summary>
+        <form class="small-form" method="post" action="{{ url_for('edit_slot', slot_id=s.id) }}">
+          <input class="form-control form-control-sm mb-1" type="date" name="date" value="{{ s.date }}" required>
+          <input class="form-control form-control-sm mb-1" type="time" name="start_time" value="{{ s.start_time }}" required>
+          <input class="form-control form-control-sm mb-1" type="time" name="end_time" value="{{ s.end_time }}" required>
+          <input class="form-control form-control-sm mb-1" type="number" name="capacity" value="{{ s.capacity }}" min="1" required>
+          <button class="btn btn-sm btn-primary">Save</button>
+        </form>
+      </details>
+      <form method="post" action="{{ url_for('delete_slot', slot_id=s.id) }}">
+        <button class="btn btn-sm btn-danger">Delete</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6">You haven't created any slots.</td></tr>
+  {% endfor %}
+</table>
+
+
+<h2>Students and marks</h2>
+<table class="table table-bordered">
+  <tr><th>Student</th><th>Exam</th><th>Slot</th><th>Marks</th></tr>
+  {% for b in roster %}
+  <tr>
+    <td>{{ b.student_name }} (#{{ b.student_id }})</td>
+    <td>{{ b.code }} - {{ b.exam_name }}</td>
+    <td>{{ b.date }}, {{ b.start_time }}</td>
+    <td>
+      <form method="post" action="{{ url_for('evaluate', booking_id=b.booking_id) }}">
+        {% set criteria = criteria_by_exam.get(b.exam_id, []) %}
+        {% if criteria %}
+          {% for r in criteria %}
+          <label class="small">{{ r.criterion }} (out of {{ r.max_marks }})</label>
+          <input class="form-control form-control-sm mb-1" type="number" name="rubric_{{ r.id }}" value="0" min="0" max="{{ r.max_marks }}" step="0.01" required>
+          {% endfor %}
+        {% else %}
+          <label class="small">Total marks</label>
+          <input class="form-control form-control-sm mb-1" type="number" name="marks" value="{{ b.marks if b.marks is not none else '' }}" min="0" step="0.01" required>
+        {% endif %}
+        <input class="form-control form-control-sm mb-1" name="remarks" value="{{ b.remarks or '' }}" placeholder="Remarks">
+        <button class="btn btn-sm btn-primary">Save</button>
+      </form>
+      {% if b.marks is not none %}
+      <small class="text-success">Saved: {{ b.marks }} marks</small>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4">No students have booked your slots yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
