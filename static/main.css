@@ -1,0 +1,66 @@
+  body {
+    background: #f4f6f9;
+    font-family: Arial, sans-serif;
+  }
+
+  .topbar {
+    background: #dceaff;
+    border-bottom: 2px solid #345b91;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .topbar a.title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #173e73;
+    text-decoration: none;
+  }
+
+  .page {
+    background: white;
+    border: 1px solid #999;
+    margin: 15px auto;
+    padding: 15px;
+    max-width: 1200px;
+    min-height: 70vh;
+  }
+
+  .footer {
+    background: #dceaff;
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  h2 {
+    font-size: 22px;
+    margin-top: 30px;
+    color: #173e73;
+  }
+
+  table {
+    font-size: 14px;
+  }
+
+  table th {
+    background: #dceaff;
+  }
+
+  .small-form {
+    width: 250px;
+    background: #f4f4f4;
+    border: 1px solid #999;
+    padding: 8px;
+    margin: 5px 0;
+  }
+
+  .login-box {
+    max-width: 400px;
+    margin: 30px auto;
+  }
+
+  summary {
+    color: blue;
+    cursor: pointer;
+  }

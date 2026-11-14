@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% block title %}Admin{% endblock %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+<p>
+  <a href="#courses">Courses</a> |
+  <a href="#exams">Exams</a> |
+  <a href="#people">People</a> |
+  <a href="#slots">Slots</a> |
+  <a href="#bookings">Bookings</a>
+</p>
+
+<h2 id="courses">Courses</h2>
+<form class="row g-2 mb-3" method="post" action="{{ url_for('create_course') }}">
+  <div class="col-md-2"><input class="form-control" name="code" placeholder="Code (CS101)" required></div>
+  <div class="col-md-3"><input class="form-control" name="name" placeholder="Course name" required></div>
+  <div class="col-md-5"><input class="form-control" name="description" placeholder="Description"></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100">Add</button></div>
+</form>
+
+<table class="table table-bordered">
+  <tr><th>Code</th><th>Name</th><th>Exams</th><th>Actions</th></tr>
+  {% for c in courses %}
+  <tr>
+    <td>{{ c.code }}</td>
+    <td>{{ c.name }}</td>
+    <td>{{ c.exam_count }}</td>
+    <td>
+      <details>
+        <summary>Edit</summary>
+        <form class="small-form" method="post" action="{{ url_for('edit_course', course_id=c.id) }}">
+          <input class="form-control form-control-sm mb-1" name="code" value="{{ c.code }}" required>
+          <input class="form-control form-control-sm mb-1" name="name" value="{{ c.name }}" required>
+          <input class="form-control form-control-sm mb-1" name="description" value="{{ c.description }}">
+          <button class="btn btn-sm btn-primary">Save</button>
+        </form>
+      </details>
+      {% if c.exam_count == 0 %}
+      <form method="post" action="{{ url_for('delete_course', course_id=c.id) }}">
+        <button class="btn btn-sm btn-danger">Delete</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4">No courses yet.</td></tr>
+  {% endfor %}
+</table>
+
+
+<h2 id="exams">Exams</h2>
+<form class="row g-2 mb-3" method="post" action="{{ url_for('create_exam') }}">
+  <div class="col-md-3">
+    <label class="form-label">Exam name</label>
+    <input class="form-control" name="name" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Course</label>
+    <select class="form-select" name="course_id" required>
+      {% for c in courses %}
+      <option value="{{ c.id }}">{{ c.code }} - {{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Type</label>
+    <select class="form-select" name="type">
+      <option>Viva</option>
+      <option>Practical</option>
+      <option>Project Demo</option>
+      <option>Assessment</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Minutes</label>
+    <input class="form-control" type="number" name="duration" value="30" min="1" required>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Max marks</label>
+    <input class="form-control" type="number" name="max_marks" value="100" min="1" required>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Slot creation dates (start / end)</label>
+    <div class="d-flex gap-1">
+      <input class="form-control" type="date" name="slot_start">
+      <input class="form-control" type="date" name="slot_end">
+    </div>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Booking dates (start / end)</label>
+    <div class="d-flex gap-1">
+      <input class="form-control" type="date" name="booking_start">
+      <input class="form-control" type="date" name="booking_end">
+    </div>
+  </div>
+  <div class="col-12"><button class="btn btn-primary">Create exam</button></div>
+</form>
+
+<table class="table table-bordered">
+  <tr><th>Exam</th><th>Course</th><th>Dates</th><th>Status</th><th>Rubric / Delete</th></tr>
+  {% for e in exams %}
+  <tr>
+    <td>
+      <b>{{ e.name }}</b><br>
+      <small>{{ e.type }}, {{ e.duration }} min, {{ e.max_marks|int }} marks</small>
+      <details>
+        <summary>Edit</summary>
+        <form class="small-form" method="post" action="{{ url_for('edit_exam', exam_id=e.id) }}">
+          <input class="form-control form-control-sm mb-1" name="name" value="{{ e.name }}" required>
+          <select class="form-select form-select-sm mb-1" name="type">
+            {% for t in ['Viva', 'Practical', 'Project Demo', 'Assessment'] %}
+            <option {% if e.type == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+          <input class="form-control form-control-sm mb-1" type="number" name="duration" value="{{ e.duration }}" min="1">
+          <input class="form-control form-control-sm mb-1" type="number" name="max_marks" value="{{ e.max_marks }}" min="1" step="0.01">
+          <small>Slot creation dates</small>
+          <input class="form-control form-control-sm mb-1" type="date" name="slot_start" value="{{ e.slot_start }}">
+          <input class="form-control form-control-sm mb-1" type="date" name="slot_end" value="{{ e.slot_end }}">
+          <small>Booking dates</small>
+          <input class="form-control form-control-sm mb-1" type="date" name="booking_start" value="{{ e.booking_start }}">
+          <input class="form-control form-control-sm mb-1" type="date" name="booking_end" value="{{ e.booking_end }}">
+          <button class="btn btn-sm btn-primary">Save</button>
+        </form>
+      </details>
+    </td>
+    <td>{{ e.course_code }}</td>
+    <td>
+      <small>
+        Slots: {{ e.slot_start or '-' }} to {{ e.slot_end or '-' }}<br>
+        Booking: {{ e.booking_start or '-' }} to {{ e.booking_end or '-' }}
+      </small>
+    </td>
+    <td>
+      <form class="d-flex gap-1" method="post" action="{{ url_for('exam_status', exam_id=e.id) }}">
+        <select class="form-select form-select-sm" name="status">
+          {% for value, label in [('draft', 'Draft'), ('slot_creation', 'Slot creation'), ('booking_open', 'Booking open'), ('closed', 'Closed'), ('completed', 'Completed')] %}
+          <option value="{{ value }}" {% if e.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-sm btn-outline-primary">Save</button>
+      </form>
+    </td>
+    <td>
+      <details>
+        <summary>Rubric ({{ rubrics.get(e.id, [])|length }})</summary>
+        {% for r in rubrics.get(e.id, []) %}
+        <form class="d-flex justify-content-between mt-1" method="post" action="{{ url_for('delete_rubric', rubric_id=r.id) }}">
+          <span>{{ r.criterion }} ({{ r.max_marks }})</span>
+          <button class="btn btn-sm btn-danger py-0">x</button>
+        </form>
+        {% endfor %}
+        <form class="small-form" method="post" action="{{ url_for('add_rubric', exam_id=e.id) }}">
+          <input class="form-control form-control-sm mb-1" name="criterion" placeholder="Criterion" required>
+          <input class="form-control form-control-sm mb-1" type="number" name="max_marks" placeholder="Max marks" min="0.01" step="0.01" required>
+          <input class="form-control form-control-sm mb-1" type="number" name="weightage" value="1" min="0.01" step="0.01">
+          <input class="form-control form-control-sm mb-1" name="description" placeholder="Description">
+          <button class="btn btn-sm btn-primary">Add</button>
+        </form>
+      </details>
+      <form class="mt-2" method="post" action="{{ url_for('delete_exam', exam_id=e.id) }}">
+        <button class="btn btn-sm btn-danger">Delete exam</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">No exams yet. Add a course first.</td></tr>
+  {% endfor %}
+</table>
+
+
+<h2 id="people">People</h2>
+<form class="d-flex gap-2 mb-3" method="get" action="#people">
+  <input class="form-control" name="q" value="{{ q }}" placeholder="Search name, email or ID">
+  <button class="btn btn-outline-primary">Search</button>
+</form>
+
+<table class="table table-bordered">
+  <tr><th>Name</th><th>Role</th><th>Email</th><th>Department / Course</th><th>Status</th><th>Change</th></tr>
+  {% for p in people %}
+  <tr>
+    <td>{{ p.name }} (#{{ p.id }})</td>
+    <td>{{ p.role }}</td>
+    <td>{{ p.email }}</td>
+    <td>{{ p.department or p.course or '-' }}</td>
+    <td>{{ p.status }}</td>
+    <td>
+      <form class="d-flex gap-1" method="post" action="{{ url_for('user_status', user_id=p.id) }}">
+        <select class="form-select form-select-sm" name="status">
+          {% for s in ['pending', 'active', 'inactive'] %}
+          <option value="{{ s }}" {% if p.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-sm btn-outline-primary">Save</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6">No users found.</td></tr>
+  {% endfor %}
+</table>
+
+
+<h2 id="slots">Slots</h2>
+<table class="table table-bordered">
+  <tr><th>ID</th><th>Exam</th><th>Examiner</th><th>Date and time</th><th>Booked</th><th>Status</th></tr>
+  {% for s in slots %}
+  <tr>
+    <td>{{ s.id }}</td>
+    <td>{{ s.code }} - {{ s.exam_name }}</td>
+    <td>{{ s.examiner_name }}</td>
+    <td>{{ s.date }}, {{ s.start_time }} to {{ s.end_time }}</td>
+    <td>{{ s.booked }}/{{ s.capacity }}</td>
+    <td>{{ 'Full' if s.booked >= s.capacity else s.status }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6">No slots yet.</td></tr>
+  {% endfor %}
+</table>
+
+
+<h2 id="bookings">Bookings</h2>
+<table class="table table-bordered">
+  <tr><th>Student</th><th>Exam</th><th>Examiner</th><th>Slot</th><th>Move to slot ID</th></tr>
+  {% for b in bookings %}
+  <tr>
+    <td>{{ b.student_name }} (#{{ b.student_id }})</td>
+    <td>{{ b.code }} - {{ b.exam_name }}</td>
+    <td>{{ b.examiner_name }}</td>
+    <td>{{ b.date }}, {{ b.start_time }} to {{ b.end_time }} ({{ b.status }})</td>
+    <td>
+      <form class="d-flex gap-1" method="post" action="{{ url_for('reschedule_booking', booking_id=b.id) }}">
+        <input class="form-control form-control-sm" type="number" name="slot_id" placeholder="Slot ID">
+        <button class="btn btn-sm btn-outline-primary">Move</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">No bookings yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
