@@ -588,3 +588,54 @@ def student_dashboard():
 
     return render_template("student_dashboard.html", exams=exams, slots=slots, history=history, q=q)
 
+
+@app.route("/student/book/<int:slot_id>", methods=["POST"])
+@login_required("student")
+def book_slot(slot_id):
+    db = get_db()
+    slot = db.execute("SELECT s.*, e.status AS exam_status, "
+                      "(SELECT count(*) FROM bookings WHERE slot_id = s.id AND status = 'booked') AS booked "
+                      "FROM slots s JOIN exams e ON e.id = s.exam_id "
+                      "WHERE s.id = ? AND s.status = 'available'", (slot_id,)).fetchone()
+    if slot is None or slot["exam_status"] != "booking_open":
+        flash("This slot is not open for booking.", "error")
+        return redirect(url_for("student_dashboard"))
+    if slot["booked"] >= slot["capacity"]:
+        flash("This slot is full.", "error")
+        return redirect(url_for("student_dashboard"))
+
+    # one booking per exam
+    already = db.execute("SELECT b.id FROM bookings b JOIN slots s ON s.id = b.slot_id "
+                         "WHERE b.student_id = ? AND s.exam_id = ? AND b.status = 'booked'",
+                         (session["user_id"], slot["exam_id"])).fetchone()
+    if already:
+        flash("You already booked this exam.", "error")
+        return redirect(url_for("student_dashboard"))
+
+    try:
+        db.execute("INSERT INTO bookings (student_id, slot_id) VALUES (?, ?)", (session["user_id"], slot_id))
+        db.commit()
+        flash("Slot booked.", "success")
+    except sqlite3.IntegrityError:
+        flash("You already booked this slot.", "error")
+    return redirect(url_for("student_dashboard"))
+
+
+@app.route("/student/cancel/<int:booking_id>", methods=["POST"])
+@login_required("student")
+def cancel_booking(booking_id):
+    db = get_db()
+    booking = db.execute("SELECT b.status, e.status AS exam_status FROM bookings b "
+                         "JOIN slots s ON s.id = b.slot_id JOIN exams e ON e.id = s.exam_id "
+                         "WHERE b.id = ? AND b.student_id = ?", (booking_id, session["user_id"])).fetchone()
+    if booking and booking["status"] == "booked" and booking["exam_status"] == "booking_open":
+        db.execute("UPDATE bookings SET status = 'cancelled' WHERE id = ?", (booking_id,))
+        db.commit()
+        flash("Booking cancelled.", "success")
+    else:
+        flash("You can't cancel this booking.", "error")
+    return redirect(url_for("student_dashboard"))
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
